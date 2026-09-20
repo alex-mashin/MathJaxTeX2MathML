@@ -1,0 +1,56 @@
+# This is not a complete Docker compose file.
+# It contains parameters needed to set up a containerised MathJax application
+# and connect it to a MediaWiki installation.
+
+services:
+  mediawiki:
+    # ...
+    depends_on:
+      # Optional.
+      mathjax:
+        condition: service_started
+    networks:
+      mathjax:
+
+  # If web frontend, e.g., nginx, is separate from MW installation. Otherwise, in mediawiki: service:
+  frontend:
+    # ...
+    volumes:
+      # Making MathJax available in the browser. Not necessary, if $wgmjUseCDN = true:
+      # Frontend web root + $wgmjServiceExternalUrl:
+      - mathjax:/var/www/js/mathjax:ro
+
+  # Should correspond to $wgmjServiceUrl:
+  mathjax:
+    build:
+      context: ./services/cgi # -- wherever the enclosed Dockerfile is installed.
+      args:
+        APK: nano nodejs
+        GIT: https://github.com/alex-mashin/MathJaxTeX2MathML.git
+        COMMAND: /usr/bin/node /usr/local/bin/tex2mml.cjs
+        VERSION_COMMAND: /usr/bin/node /usr/local/bin/tex2mml.cjs -v
+        CONTENT_TYPE: text/mathml
+    environment:
+      ERRORS: FATAL
+    restart: unless-stopped
+    volumes:
+      - mathjax:/usr/local/bin/node_modules/mathjax-full/es5
+    tmpfs:
+      - /tmp
+    networks:
+      mathjax:
+    cpu_shares: 512
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+
+  # ...
+
+volumes:
+  # ...configs:
+  mathjax:
+
+networks:
+  # ...configs:
+  mathjax:

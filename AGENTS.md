@@ -19,8 +19,9 @@ Order matters: `lint -> test`.
 - **Entry point**: `/tex2mml.cjs` (bundled CommonJS script with MathJax v4)
 - **Runtime config**: `config.json`, loaded via `require('./config.json')` and passed to `MathJax.init()` — defines the TeX packages, custom macros (`\AA`, `\C`, etc.), inline/display delimiters, and HTML options (`skipHtmlTags`, `ignoreHtmlClass`) used during conversion
 - **Runtime dependencies**: `@mathjax/src`, plus `@js-util/config-object-merge` for deep-config merging in HTML mode
+- **Optional runtime dependency**: `mathjax`, that can be exposed to web server, making converted MathML interactive in browser
 - **Build tools**: webpack, terser-webpack-plugin (dev dependencies)
-- **Container/CGI**: `Dockerfile` + `docker-compose.yml` containerise the tool; the Alpine image installs Node and runs the bundled `.cjs` as an HTTP CGI server (busybox httpd, port 80) returning `text/mathml`, wired into a MediaWiki install via the MathJax extension's External Data / `$wgmjUseCDN`. The compose template orchestrates mediawiki/frontend/mathjax services.
+- **Container/CGI**: `Dockerfile` + `docker-compose.yml` containerise the tool; the Alpine image installs Node and runs the bundled `.cjs` as an HTTP CGI server (busybox httpd, port 80) returning `text/mathml`, wired into a MediaWiki install via the MathJax or External Data extension. The compose template orchestrates mediawiki/frontend/mathjax services.
 
 ## Configuration
 

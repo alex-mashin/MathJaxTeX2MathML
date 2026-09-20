@@ -34,7 +34,7 @@ services:
       ERRORS: FATAL
     restart: unless-stopped
     volumes:
-      - mathjax:/usr/local/bin/MathJaxTeX2MathML/node_modules/@mathjax/src/components/cjs/tex-mml-chtml
+      - mathjax:/usr/local/bin/MathJaxTeX2MathML/node_modules/mathjax
     tmpfs:
       - /tmp
     networks:

@@ -115,11 +115,14 @@ it defines small flat functions (`isHTML`, `tex2mml`, `convertTeX`, `typesetHTML
 ## Author
 
 This application is based on:
+
  - the code from [MathJax Demos Node](https://github.com/mathjax/MathJax-demos-node), radically refactored,
  - the conversion script for MathJax 3, previously distributed with [MathJax](https://github.com/alex-mashin/MathJax) extension for MediaWiki.
+
 AI assistant (OpenCode) was used to help coding.
 
 **Author:** Alexander Mashin
+
 **License:** MIT
 
 This repository is published openly on GitHub at <https://github.com/alex-mashin/MathJaxTeX2MathML.git>.

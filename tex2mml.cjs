@@ -98,7 +98,7 @@ const convertTeX = async ( math, document ) => {
 // Used by HTML input:
 const extractConfig = ( html, adaptor ) => {
 	const scripts = adaptor.getElements( 'script', html );
-	for (const script of scripts) {
+	for ( const script of scripts ) {
 		const content = script.textContent || script.innerText;
 		if ( !content ) continue;
 		const lines = content.trim().split( '\n' );

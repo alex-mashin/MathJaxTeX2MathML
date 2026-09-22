@@ -79,10 +79,18 @@ const inputType = ( str ) => {
 
 // Inject an <annotation> of the original source inside a serialized MathML element string:
 const withAnnotation = ( mml, math, adaptor ) => {
-	const parsed = adaptor.parse( mml, 'text/mathml' ).body.children[0];
+	const parsed = adaptor.clone( adaptor.parse( mml, 'text/mathml' ).body.children[0] );
 	const tex = math.attributes.attributes['data-latex'];
 	const annotation = adaptor.node( 'annotation', { encoding: 'application/x-tex' }, [ adaptor.text( tex ) ] );
-	adaptor.append( parsed, annotation );
+	const mrow = adaptor.node( 'mrow' );
+	for ( node of adaptor.childNodes( parsed ) ) {
+		adaptor.append( mrow, node );
+	}
+	parsed.children = [];
+	const semantics = adaptor.node( 'semantics' );
+	adaptor.append( semantics, mrow );
+	adaptor.append( semantics, annotation );
+	adaptor.append( parsed, semantics );
 	return adaptor.outerHTML( parsed );
 };
 
@@ -178,7 +186,7 @@ Input: Read from stdin. Auto-detects HTML vs TeX based on content.` );
 	let output;
 	// HTML mode: correcting MathJax after detecting stdin type — re-init with our converter + auto-typesetting of the parsed document:
 	if ( inputType( input ) !== typeTex ) {
-		config.startup.document = entities.translate( input );
+		config.startup.document = String( input );
 		const extracted = extractConfig( config.startup.document, MathJax.startup.adaptor );
 		const merged = merge( [ config, extracted ] );
 

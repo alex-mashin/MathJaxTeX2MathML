@@ -12,7 +12,7 @@ npm i
 
 ## Usage
 
-Reads input from **stdin**. A standalone equation is treated as TeX; any input that resembles HTML or XML markup is processed as an HTML page:
+Reads input from **stdin**. A standalone equation is treated as TeX; any input that resembles HTML or XML markup (even incomplete) is processed as an HTML page:
 
 ```bash
 # Show version / help
@@ -110,7 +110,7 @@ It was developed to use with MediaWiki (External Data and MathJax extensions), b
 The script requires `node.js` and `npm`.
 
 The bundled `.cjs` script depends only on `@mathjax/src` and `@js-util/config-object-merge`;
-it defines small flat functions (`isHTML`, `tex2mml`, `convertTeX`, `typesetHTML`, `renderMathML`) rather than bundling large utility objects.
+it defines small flat functions (`inputType`, `tex2mml`, `convertTeX`, `typesetTags`, `typesetHTML`, `renderMathML`) rather than bundling large utility objects.
 
 ## Author
 

@@ -26,22 +26,24 @@ const embeddings = [
 for ( const lang of [ 'ru', 'en' ] ) {
 	let counter = 0;
 	let words = [];
-	const html = ( ( lang ) => {
-		let html = '<html><head><title>TeX to MathML test</title></head><body><ul>';
+
+	const inner = ( ( lang ) => {
+		let inner = '<ul>';
 		for ( const syntax of embeddings ) {
 			const word = syntax.intro[lang];
 			for ( const tex of formulas ) {
 				const invoke = syntax.open + tex + syntax.close;
-				html += '\n<li>' + word + ': <code>' + invoke + '</code> &rarr; ' + invoke + '</li>';
+				inner += '\n<li>' + word + ': <code>' + invoke + '</code> &rarr; ' + invoke + '</li>';
 				counter ++;
 				words.push( word );
 			}
 		}
-		return html + '\n</ul></body></html>';
+		return inner + '\n</ul>';
 	} )( lang );
-	words = [ ...new Set( words ) ];
 
-	test( 'Process HTML from stdin contains one <html> as many <math> tags as there were TeX formulas (' + counter + ') with TeX annotations: ' + lang, () => {
+	const html = '<html><head><title>TeX to MathML test</title></head><body>' + inner + '</body></html>';
+
+	test( 'Process complete HTML contains one <html> and as many <math> tags as there were TeX formulas (' + counter + ') with TeX annotations: ' + lang, () => {
 		const output = run( '', html ).toString();
 		expect( output ).toContain( '<html' );
 		const mathTags = ( output.match( /<math[^>]*>.+?<\/math>/gs ) || [] ).length;
@@ -51,14 +53,23 @@ for ( const lang of [ 'ru', 'en' ] ) {
 		}
 	} );
 
-	test( 'Process HTML from stdin preserves doctype: ' + lang, () => {
+	test( 'Process HTML tags contain as many <math> tags as there were TeX formulas (' + counter + ') with TeX annotations: ' + lang, () => {
+		const output = run( '', inner ).toString();
+		const mathTags = ( output.match( /<math[^>]*>.+?<\/math>/gs ) || [] ).length;
+		expect( mathTags ).toBe( counter );
+		for ( const tex of formulas ) {
+			expect( output ).toContain( `<annotation encoding="application/x-tex">${tex}</annotation>` );
+		}
+	} );
+
+	test( 'Process complete HTML from stdin preserves doctype: ' + lang, () => {
 		let doctype = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
 		"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">`
 		const output = run( '', doctype + '\n' + html );
 		expect( output.toString() ).toContain( doctype );
 	} );
 
-	test( 'Process HTML from stdin preserves Unicode as-is: ' + lang, () => {
+	test( 'Process complete HTML from stdin preserves Unicode as-is: ' + lang, () => {
 		const output = run( '', html );
 		for ( const word of words ) {
 			expect( output.toString() ).toContain( word );

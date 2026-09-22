@@ -25,21 +25,22 @@ Order matters: `lint -> test`.
 
 ## Configuration
 
-The MathJax configuration lives in the top-level `config.json`. It shapes both TeX and HTML processing: custom macros, enabled packages (`ams`, `empheq`, `physics`, ...), math delimiters (`$...$`, `\(...\)`, etc.), `maxBuffer`, and which HTML tags/classes are skipped or ignored when scanning stdin. When changing conversion behavior (new macros/packages/tag handling), edit this file rather than hard-coding options in `tex2mml.cjs`. In HTML mode only, a leading `<script>window.MathJax = {…}</script>` block on stdin is parsed and its object merged over `config.json` (`@js-util/config-object-merge`) so the page can override packages/macros/delimiters — `options.menuOptions` is stripped from any such override before merging.
+The MathJax configuration lives in the top-level `config.json`. It shapes TeX, tags and HTML processing: custom macros, enabled packages (`ams`, `empheq`, `physics`, ...), math delimiters (`$...$`, `\(...\)`, etc.), `maxBuffer`, and which HTML tags/classes are skipped or ignored when scanning stdin. When changing conversion behavior (new macros/packages/tag handling), edit this file rather than hard-coding options in `tex2mml.cjs`. In HTML or tags modes, a leading `<script>window.MathJax = {…}</script>` block on stdin is parsed and its object merged over `config.json` (`@js-util/config-object-merge`) so the page can override packages/macros/delimiters — `options.menuOptions` is stripped from any such override before merging.
 
 ## Usage Patterns
 
-| Command                         | Purpose                                       |
-|---------------------------------|-----------------------------------------------|
-| `node tex2mml.cjs -v`           | Show version                                  |
-| `node tex2mml.cjs -h`           | Show help                                     |
-| `node tex2mml.cjs < input.tex`  | Convert TeX from stdin                        |
-| `node tex2mml.cjs < input.html` | Process HTML file with TeX formulas via stdin |
+| Command                         | Purpose                                                   |
+|---------------------------------|-----------------------------------------------------------|
+| `node tex2mml.cjs -v`           | Show version                                              |
+| `node tex2mml.cjs -h`           | Show help                                                 |
+| `node tex2mml.cjs < input.tex`  | Convert TeX from stdin                                    |
+| `node tex2mml.cjs < input.html` | Process HTML file or fragment with TeX formulas via stdin |
 
 ## Input Handling
 
 - **TeX mode**: Standalone equation
-- **HTML mode**: Auto-detected with a regex (`tex2mml.cjs`) — an optional `<!doctype>` followed by a matching `<tag>…</tag>` ⇒ HTML, otherwise TeX. Output is a full `<html>…</html>` page with each formula rendered as `<math …></math>`
+- **HTML tags mode**: Auto-detected with a regex (`tex2mml.cjs`) — several a matching `<tag>…</tag>`. Output is the same tag structure with each formula rendered as `<math …></math>`
+- **HTML mode**: Auto-detected with a regex (`tex2mml.cjs`) — an optional `<!doctype>` followed by a matching `<html …>…</html>` ⇒ HTML. Output is a full `<html>…</html>` page with each formula rendered as `<math …></math>`
 
 ## Test Suite
 
@@ -49,6 +50,7 @@ Located at `test/tex2mml.test.js`. Key tests verify:
 - TeX/HTML auto-detection via isHTML()
 - **HTML processing from stdin produces `<html>...</html>` containing as many `<math ...>...</math>` tags, as there are teX formulas in HTML (4 for the bundled example)**; each produced element also carries its original source via an `<annotation encoding="application/x-tex">` tag (mirroring the TeX-mode assertion below)
 - HTML output preserves a leading `<!DOCTYPE html>` and non-latin characters verbatim when present on stdin
+- **HTML tags processing from stdin produces tag structure containing as many `<math ...>...</math>` tags, as there are teX formulas in HTML (4 for the bundled example)**; each produced element also carries its original source via an `<annotation encoding="application/x-tex">` tag (mirroring the TeX-mode assertion below)
 - TeX processing from stdin produces one `<math ...>...</math>` tag whose source is embedded via an `<annotation encoding="application/x-tex">` carrying the original LaTeX (e.g. `e = m c ^ 2`)
 - **Every macro in `config.json`'s `tex.macros`** — iterates over all keys, invokes each as inline `\(...\)` inside a minimal HTML page, and asserts output has exactly `<macros.length>` `<math …></math>` elements (one per macro), each carrying its own source annotation. This is the safety net that keeps custom macros wired end-to-end
 

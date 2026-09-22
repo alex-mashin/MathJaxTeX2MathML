@@ -68,7 +68,14 @@ const entitDir = path.join( __dirname, 'node_modules', '@mathjax/src/cjs/util/en
 	} catch {}
 } )();
 
-const isHTML = ( str ) => /^\s*(<!doctype[^<>]+>\s*)?<(?<tag>[a-z-.]+)(\s+[^<>]+)?>.+<\/\k<tag>\s*>\s*$/is.test( str );
+const typeTex = 0;
+const typeHtml = 1;
+const typeTags = 2;
+const inputType = ( str ) => {
+	if ( /^\s*(<!doctype[^<>]+>\s*)?<(html)(\s+[^<>]+)?>.+<\/html\s*>\s*$/is.test( str ) ) return typeHtml;
+	if ( /^\s*(<(?<tag>[a-z-.]+)(\s+[^<>]+)?>.+<\/\k<tag>\s*>)+\s*$/is.test( str ) ) return typeTags;
+	return typeTex;
+}
 
 // Inject an <annotation> of the original source inside a serialized MathML element string:
 const withAnnotation = ( mml, math, adaptor ) => {
@@ -131,6 +138,14 @@ const typesetHTML = async ( document ) => {
 	return ( doctype ? doctype + '\n' : '' ) + adaptor.outerHTML( adaptor.root( doc ) );
 };
 
+// Used by tags input:
+const typesetTags = async ( document ) => {
+	await document.renderPromise();
+	const adaptor = document.adaptor;
+	const doc = document.document;
+	console.log( adaptor.innerHTML( adaptor.root( doc ).children[1] ) );
+};
+
 const renderMathML = ( math, document ) => {
 	const adaptor = document.adaptor;
 	const mml =  tex2mml( math.root, document );
@@ -160,8 +175,9 @@ Input: Read from stdin. Auto-detects HTML vs TeX based on content.` );
 	const config = require( './config.json' );
 	await MathJax.init( config ); // initialise MathJax, so we have an adaptor.
 
+	let output;
 	// HTML mode: correcting MathJax after detecting stdin type — re-init with our converter + auto-typesetting of the parsed document:
-	if ( isHTML( input ) ) {
+	if ( inputType( input ) !== typeTex ) {
 		config.startup.document = entities.translate( input );
 		const extracted = extractConfig( config.startup.document, MathJax.startup.adaptor );
 		const merged = merge( [ config, extracted ] );
@@ -177,8 +193,13 @@ Input: Read from stdin. Auto-detects HTML vs TeX based on content.` );
 			]
 		};
 		await MathJax.init( config );
-		console.log( await typesetHTML( MathJax.startup.document ) );
+		if ( inputType( input ) === typeHtml ) {
+			output = await typesetHTML( MathJax.startup.document );
+		} else {
+			output = await typesetTags( MathJax.startup.document );
+		}
 	} else {
-		console.log( await convertTeX( input.trim(), MathJax.startup.document ) );
+		output = await convertTeX( input.trim(), MathJax.startup.document );
 	}
+	console.log( output );
 } )();

@@ -25,7 +25,7 @@ services:
     build:
       context: ./services/cgi # -- wherever the enclosed Dockerfile is installed.
       args:
-        APK: nano nodejs
+        SRC_LANG: node
         GIT: https://github.com/alex-mashin/MathJaxTeX2MathML.git
         COMMAND: /usr/bin/node /usr/local/bin/MathJaxTeX2MathML/tex2mml.cjs
         VERSION_COMMAND: /usr/bin/node /usr/local/bin/MathJaxTeX2MathML/tex2mml.cjs -v

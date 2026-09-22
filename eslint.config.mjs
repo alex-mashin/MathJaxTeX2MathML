@@ -51,4 +51,5 @@ export default [
             ],
         },
     },
+    { ignores: ["**/.opencode/**", "**/node_modules/**", "**/eslint.config.mjs"] }
 ];

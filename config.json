@@ -65,12 +65,24 @@
 			"verb"
 		],
 		"inlineMath": [
-			[ "\\(", "\\)" ],
-			[ "$", "$" ]
+			[
+				"\\(",
+				"\\)"
+			],
+			[
+				"$",
+				"$"
+			]
 		],
 		"displayMath": [
-			[ "$$", "$$" ],
-			[ "\\[", "\\]" ]
+			[
+				"$$",
+				"$$"
+			],
+			[
+				"\\[",
+				"\\]"
+			]
 		],
 		"tags": "ams",
 		"maxBuffer": 10240,
@@ -118,7 +130,7 @@
 			"Z": "\\mathbb{Z}",
 			"Zeta": "\\mbox{\\unicode{x0396}}",
 			"am": "\\operatorname{ am }",
-			"and" : "\\land",
+			"and": "\\land",
 			"arcctg": "\\operatorname{ arccot }",
 			"arcgd": "\\operatorname{ arcgd }",
 			"arch": "\\operatorname{ arcosh }",
@@ -126,11 +138,26 @@
 			"arcth": "\\operatorname{ arcotanh }",
 			"arsh": "\\operatorname{ arsinh }",
 			"arth": "\\operatorname{ artanh }",
-			"ba": ["\\bigl< #1 \\Bigr>", 1],
-			"bc": ["\\bigllbrace #1 \\Bigr\\rbrace", 1],
-			"bp": ["\\bigl( #1 \\Bigr)", 1],
-			"bs": ["\\bigl[ #1 \\Bigr]", 1],
-			"ceil": ["\\bigllceil #1 \\Bigr\\rceil", 1],
+			"ba": [
+				"\\left< #1 \\right>",
+				1
+			],
+			"bc": [
+				"\\left\\lbrace #1 \\right\\rbrace",
+				1
+			],
+			"bp": [
+				"\\left( #1 \\right)",
+				1
+			],
+			"bs": [
+				"\\left[ #1 \\right]",
+				1
+			],
+			"ceil": [
+				"\\left\\lceil #1 \\right\\rceil",
+				1
+			],
 			"ch": "\\operatorname{ cosh }",
 			"clubs": "\\clubsuit",
 			"cd": "\\operatorname{ cd }",
@@ -152,7 +179,10 @@
 			"erfi": "\\operatorname{ erfi }",
 			"euro": "\\mbox{\\unicode{x20AC}}",
 			"fint": "{\\huge\\unicode{x2A0F}}",
-			"floor": ["\\bigllfloore #1 \\Bigr\\rfloor", 1],
+			"floor": [
+				"\\left\\lfloor #1 \\right\\rfloor",
+				1
+			],
 			"gd": "\\operatorname{ gd }",
 			"hearts": "{ \\color{ red } \\heartsuit }",
 			"helm": "\\operatorname{ helm }",
@@ -176,7 +206,10 @@
 			"oiint": "\\operatorname*{ \\huge\\unicode{x222F} }",
 			"ointclockwise": "\\operatorname*{ \\huge\\unicode{x2232} }",
 			"ointctrclockwise": "\\operatorname*{ \\huge\\unicode{x2233} }",
-			"of": ["\\bigl( #1 \\Bigr)", 1],
+			"of": [
+				"\\left( #1 \\right)",
+				1
+			],
 			"or": "\\lor",
 			"ord": "\\operatorname{ ord }",
 			"rarr": "\\rightarrow",

@@ -20,33 +20,32 @@ services:
       # Frontend web root + $wgmjServiceExternalUrl:
       - mathjax:/var/www/js/mathjax:ro
 
-  # Should correspond to $wgmjServiceUrl:
   mathjax:
     build:
-      context: ./services/cgi # -- wherever the enclosed Dockerfile is installed.
+      context: ./services/cgi
       args:
         SRC_LANG: node
-        # In case a volume mounted in the same container is user as a source for MathJax attached in the browser:
+        # Add mathjax@4 and a font package if you want to serve mahjax to users' browsers to make math interactive:
         NODE: >
-          @mathjax
+          mathjax@4
           @mathjax/mathjax-asana-font @mathjax/mathjax-bonum-font @mathjax/mathjax-dejavu-font @mathjax/mathjax-fira-font
-          @mathjax/mathjax-modern-font @mathjax/mathjax-newcm-font @mathjax/mathjax-pagella-font @mathjax/mathjax-schola-font @mathjax/mathjax-stix2-font
-          @mathjax/mathjax-termes-font @mathjax/mathjax-tex-font
+          @mathjax/mathjax-modern-font @mathjax/mathjax-newcm-font @mathjax/mathjax-pagella-font @mathjax/mathjax-schola-font
+          @mathjax/mathjax-stix2-font @mathjax/mathjax-termes-font @mathjax/mathjax-tex-font
         GIT: https://github.com/alex-mashin/MathJaxTeX2MathML.git
-        COMMAND: /usr/bin/node /usr/local/bin/MathJaxTeX2MathML/tex2mml.cjs
+        COMMAND: /usr/bin/node /usr/local/bin/MathJaxTeX2MathML/tex2mml.cjs -l "$$lang"
         VERSION_COMMAND: /usr/bin/node /usr/local/bin/MathJaxTeX2MathML/tex2mml.cjs -v
-        CONTENT_TYPE: text/mathml
+        CONTENT_TYPE: text/html
     environment:
       ERRORS: FATAL
     restart: unless-stopped
-    volumes:
-      # In case a volume mounted in the same container is user as a source for MathJax attached in the browser. Change with the font:
-      - mathjax:/usr/local/bin/MathJaxTeX2MathML/node_modules/mathjax
     tmpfs:
       - /tmp
+    volumes:
+      # Mount and share this volume with web server frontend if you want to serve mahjax to users' browsers to make math interactive:
+      - mathjax:/usr/local/bin/node_modules:ro
     networks:
+      # This network ought to be shared with CMS:
       mathjax:
-    cpu_shares: 512
     deploy:
       resources:
         limits:

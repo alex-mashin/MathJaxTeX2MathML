@@ -14,8 +14,7 @@
 	},
 	"dependencies": {
 		"@js-util/config-object-merge": "^1.0.0",
-		"@mathjax/src": "^4.1.0",
-		"mathjax": "^4.1.0"
+		"@mathjax/src": "^4.1.0"
 	},
 	"devDependencies": {
 		"eslint": "^10.0.0",

@@ -146,18 +146,19 @@ const typesetHTML = async ( document ) => {
 	return ( doctype ? doctype + '\n' : '' ) + adaptor.outerHTML( adaptor.root( doc ) );
 };
 
+// Used by HTML and tags inpit:
+const renderMathML = ( math, document ) => {
+	const adaptor = document.adaptor;
+	const mml =  tex2mml( math.root, document );
+	math.typesetRoot = adaptor.firstChild( adaptor.body( adaptor.parse( mml, 'text/html' ) ) );
+};
+
 // Used by tags input:
 const typesetTags = async ( document ) => {
 	await document.renderPromise();
 	const adaptor = document.adaptor;
 	const doc = document.document;
-	console.log( adaptor.innerHTML( adaptor.root( doc ).children[1] ) );
-};
-
-const renderMathML = ( math, document ) => {
-	const adaptor = document.adaptor;
-	const mml =  tex2mml( math.root, document );
-	math.typesetRoot = adaptor.firstChild( adaptor.body( adaptor.parse( mml, 'text/html' ) ) );
+	return adaptor.innerHTML( adaptor.root( doc ).children[1] );
 };
 
 ( async () => {

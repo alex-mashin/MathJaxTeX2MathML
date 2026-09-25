@@ -61,6 +61,7 @@ TeX processing is configured through `config.json` and `locales/(lang).json` —
 - **textcomp** — text Companion-font symbols (copyright, section markers, …). <https://www.ctan.org/pkg/textcomp>
 - **physics** — clean notation for quantum-mechanical bra-ket (`\bra \psi`), derivatives and the nabla by Sergio C. de la Barrerat. <https://ctan.org/pkg/physics?lang=en>
 - **mhchem** — chemical formulas (`\ce{ CO2 + C -> 2 CO }`), chemical formulas. <https://github.com/mhchem/MathJax-mhchem>
+- **bussprofs** — proof trees in the style of the sequent calculus; by Samuel R. Buss. Only in HTML/tags modes. <https://www.ctan.org/pkg/bussproofs>
 - **verb** — inline verbatim inside math via `\verb`. <https://docs.mathjax.org/en/latest/input/tex/extensions/verb.html>
 - **tagformat** — customise equation tags (e.g. the body of `\tag{…}`). <https://docs.mathjax.org/en/latest/input/tex/extensions/tagformat.html>
 - **centernot** — centered negations such as `\cancel` and related notations by Heiko Oberdiek. <https://www.ctan.org/pkg/centernot>

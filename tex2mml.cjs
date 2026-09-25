@@ -179,6 +179,7 @@ const typeset = async( input, config ) => {
 				}
 			]
 		};
+		merged.loader.load.push( 'output/chtml' ); // this is only needed for bussproofs and only works in HTML/tags modes.
 
 		await MathJax.init( merged );
 		if ( type === typeHtml ) {

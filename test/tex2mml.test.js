@@ -187,3 +187,31 @@ test( 'Test that all additional macros from <script> (' + Object.keys( addedMacr
 	}
 	expect( numErrors( output ) ).toBe( 0 );
 } );
+
+const bussproofs = `\\begin{prooftree}
+	\\AxiomC{}
+	\\RightLabel{Hyp$^{1}$}
+	\\UnaryInfC{$P$}
+	\\AXC{$P\\to Q$}
+	\\RL{$\\to_E$}
+	\\BIC{$Q^2$}
+	\\AXC{$Q\\to R$}
+	\\RL{$\\to_E$}
+	\\BIC{$R$}
+	\\AXC{$Q$}
+	\\RL{Rit$^2$}
+	\\UIC{$Q$}
+	\\RL{$\\wedge_I$}
+	\\BIC{$Q\\wedge R$}
+	\\RL{$\\to_I$$^1$}
+	\\UIC{$P\\to Q\\wedge R$}
+\\end{prooftree}`;
+const html_with_bussproofs = `<html><head><title>bussproofs</title></head><body>${bussproofs}</body></html>`;
+test( 'HTML with bussproofs contains one <math> tag with a TeX annotation, and no errors', () => {
+	const output = run( '', html_with_bussproofs ).toString();
+	const mathTags = ( output.match( /<math[^>]*>.+?<\/math>/gs ) || [] ).length;
+	expect( mathTags ).toBe( 1 );
+	const escaped = escapeSomeHtml( bussproofs );
+	expect( output ).toContain( `<annotation encoding="application/x-tex">${escaped}</annotation>` );
+	expect( numErrors( output ) ).toBe( 0 );
+} );

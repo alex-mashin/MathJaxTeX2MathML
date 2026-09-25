@@ -192,7 +192,12 @@ const typeset = async( input, config ) => {
 };
 
 ( async () => {
-	for ( const arg of process.argv.slice( 2 ) ) {
+	let locale = 'ru';
+	const args = process.argv.slice( 2 );
+	console.log( args );
+	for ( let pos = 0; pos < args.length; pos++ ) {
+		const arg = args[pos];
+		console.log( `${pos} --> ${arg}` );
 		if ( arg === '-h' || arg === '--help' ) {
 			console.log( `tex2mml.cjs [options]
 Convert TeX expressions to MathML via stdin.
@@ -200,12 +205,15 @@ Convert TeX expressions to MathML via stdin.
 Options:
 -h, --help    Show this help message
 -v, --version Show version
+-l, --lang    Set locale (optional, default '${locale}')
 
 Input: Read from stdin. Auto-detects HTML vs TeX based on content.` );
 			process.exit( 0 );
 		} else if ( arg === '-v' || arg === '--version' ) {
 			console.log( MathJax.version || '4.1.3' );
 			process.exit( 0 );
+		} else if ( arg === '-l' || arg === '--lang' ) {
+			locale = args[++pos] ?? locale;
 		}
 	}
 
@@ -214,6 +222,13 @@ Input: Read from stdin. Auto-detects HTML vs TeX based on content.` );
 	const input = Buffer.concat( chunks ).toString( 'utf8' );
 
 	const config = require( './config.json' );
+	let locale_macros;
+	try {
+		locale_macros = require( './locales/' + locale + '.json' );
+	} catch {
+	 	locale_macros = require( './locales/ru.json' );
+	}
+	config.tex.macros = merge( [ config.tex.macros, locale_macros ] );
 
 	console.log( await typeset( input, config ) );
 } )();

@@ -1,0 +1,16 @@
+{
+	"arcctg": "\\operatorname{ arccot }",
+	"arcgd": "\\operatorname{ arcgd }",
+	"arch": "\\operatorname{ arcosh }",
+	"arctg": "\\operatorname{ arctan }",
+	"arcth": "\\operatorname{ arcotanh }",
+	"arsh": "\\operatorname{ arsinh }",
+	"arth": "\\operatorname{ artanh }",
+	"ch": "\\operatorname{ cosh }",
+	"ctg": "\\operatorname{ cot }",
+	"cth": "\\operatorname{ cotanh }",
+	"rot": "\\curl",
+	"sh": "\\operatorname{ sinh }",
+	"tg": "\\operatorname{ tan }",
+	"th": "\\operatorname{ tanh }"
+}

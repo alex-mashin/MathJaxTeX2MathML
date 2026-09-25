@@ -2,58 +2,51 @@
 
 ## Workflow
 
-Changes are applied one at a time, each followed by `npm test`. When tests pass, in order:
-1. Remove throwaway probe/debug artifacts created during the task (e.g. `_*.cjs`, `_dbg.js`) — use them only to investigate, then delete as soon as they're no longer needed and never leave them in the working tree at end of task; re-run `npm run lint && npm test` so the tracked tree stays clean.
+Apply changes one at a time, each followed by `npm test`. When tests pass:
+1. Remove throwaway probe/debug artifacts (e.g. `_*.cjs`, `_dbg.js`) — use them only to investigate; never leave them in the tree at task end. Then re-run `npm run lint && npm test` so the tracked tree stays clean.
 2. Lint (`npm run lint`).
-3. Commit the working tree — commit after *every* successful change so any step can be reverted without losing prior work.
+3. Commit the working tree after *every* successful change, so any step is revertable without losing prior work.
 
-## Core Commands
+Order matters: **lint -> test**. Tests run via Jest; there's no typecheck or separate formatter — ESLint owns formatting (see below).
 
-- **Run tests**: `npm test`
-- **Lint**: `npm run lint`
+## Commands
 
-Order matters: `lint -> test`.
+- Test: `npm test`  ·  Lint: `npm run lint`
+- Show version/help before MathJax init: `node tex2mml.cjs -v` / `-h`
+- Convert TeX/MathML from stdin, locale via `-l`: `node tex2mml.cjs -l ru < input.tex`, `< input.html`
 
-## Architecture
+## What to edit — config files, not the script
 
-- **Entry point**: `/tex2mml.cjs` (bundled CommonJS script with MathJax v4)
-- **Runtime config**: `config.json`, loaded via `require('./config.json')` and passed to `MathJax.init()` — defines the TeX packages, custom macros (`\AA`, `\C`, etc.), inline/display delimiters, and HTML options (`skipHtmlTags`, `ignoreHtmlClass`) used during conversion
-- **Runtime dependencies**: `@mathjax/src`, plus `@js-util/config-object-merge` for deep-config merging in HTML mode
-- **Optional runtime dependency**: `mathjax`, that can be exposed to web server, making converted MathML interactive in browser
-- **Build tools**: webpack, terser-webpack-plugin (dev dependencies)
-- **Container/CGI**: `Dockerfile` + `docker-compose.yml` containerise the tool; the Alpine image installs Node and runs the bundled `.cjs` as an HTTP CGI server (busybox httpd, port 80) returning `text/mathml`, wired into a MediaWiki install via the MathJax or External Data extension. The compose template orchestrates mediawiki/frontend/mathjax services.
+Conversion behavior is **data-driven**. Custom macros (`\AA`, `\C`, …) and enabled TeX packages (`ams`, `empheq`, `physics`, `mhchem`, …), delimiters (`$…$`, `\(...\)`, `\[…\]`), `maxBuffer`, and the HTML tags/classes skipped while scanning stdin all live in config — **edit those, don't hard-code options into `tex2mml.cjs`.**
 
-## Configuration
+- Top-level runtime config: `config.json` (loaded via `require('./config.json')`).
+- Locale overrides/macros: `locales/<lang>.json`, loaded via `require('./locales/' + locale + '.json')`; unknown/missing locales fall back to `ru.json` (`tex2mml.cjs:228`). **Default locale is now `ru`** (`tex2mml.cjs:195`) — the `-l en` path still exists but isn't default.
 
-The MathJax configuration lives in the top-level `config.json`. It shapes TeX, tags and HTML processing: custom macros, enabled packages (`ams`, `empheq`, `physics`, ...), math delimiters (`$...$`, `\(...\)`, etc.), `maxBuffer`, and which HTML tags/classes are skipped or ignored when scanning stdin. When changing conversion behavior (new macros/packages/tag handling), edit this file rather than hard-coding options in `tex2mml.cjs`. In HTML or tags modes, a leading `<script>window.MathJax = {…}</script>` block on stdin is parsed and its object merged over `config.json` (`@js-util/config-object-merge`) so the page can override packages/macros/delimiters — `options.menuOptions` is stripped from any such override before merging.
+Locale macros are redefinitions of names already in `config.json`, so macro counts stay stable across locales (that's why tests pass for either default).
 
-## Usage Patterns
+## Input modes (auto-detected by regex in `inputType`, tex2mml.cjs:73)
 
-| Command                         | Purpose                                                   |
-|---------------------------------|-----------------------------------------------------------|
-| `node tex2mml.cjs -v`           | Show version                                              |
-| `node tex2mml.cjs -h`           | Show help                                                 |
-| `node tex2mml.cjs < input.tex`  | Convert TeX from stdin                                    |
-| `node tex2mml.cjs < input.html` | Process HTML file or fragment with TeX formulas via stdin |
+- **TeX** — a standalone equation → one `<math …></math>` with the source embedded in `<annotation encoding="application/x-tex">`.
+- **HTML tags** (`<tag>…</tag>` blocks) → same tag structure, each formula as `<math>`.
+- **HTML** (optional `<!doctype>` + `<html>…</html>`) → full page with every formula replaced by `<math>`, doctype/non-latin preserved verbatim.
 
-## Input Handling
+In HTML/tags modes a leading `<script>window.MathJax = {…}</script>` block on stdin is parsed and its object merged over `config.json` (`@js-util/config-object-merge`); `options.menuOptions` is stripped from any such override before merging (tex2mml.cjs:133).
 
-- **TeX mode**: Standalone equation
-- **HTML tags mode**: Auto-detected with a regex (`tex2mml.cjs`) — several a matching `<tag>…</tag>`. Output is the same tag structure with each formula rendered as `<math …></math>`
-- **HTML mode**: Auto-detected with a regex (`tex2mml.cjs`) — an optional `<!doctype>` followed by a matching `<html …>…</html>` ⇒ HTML. Output is a full `<html>…</html>` page with each formula rendered as `<math …></math>`
+## Test suite — safety nets you must not break
 
-## Test Suite
+Tests live at `test/tex2mml.test.js`. They assert end-to-end, so every macro stays wired. Two non-obvious traps when adding macros:
 
-Located at `test/tex2mml.test.js`. Key tests verify:
-- Version (`-v`) shows MathJax version (4.1.x)
-- Help (`-h`) flag works before MathJax initialization
-- TeX/HTML auto-detection via isHTML()
-- **HTML processing from stdin produces `<html>...</html>` containing as many `<math ...>...</math>` tags, as there are teX formulas in HTML (4 for the bundled example)**; each produced element also carries its original source via an `<annotation encoding="application/x-tex">` tag (mirroring the TeX-mode assertion below)
-- HTML output preserves a leading `<!DOCTYPE html>` and non-latin characters verbatim when present on stdin
-- **HTML tags processing from stdin produces tag structure containing as many `<math ...>...</math>` tags, as there are teX formulas in HTML (4 for the bundled example)**; each produced element also carries its original source via an `<annotation encoding="application/x-tex">` tag (mirroring the TeX-mode assertion below)
-- TeX processing from stdin produces one `<math ...>...</math>` tag whose source is embedded via an `<annotation encoding="application/x-tex">` carrying the original LaTeX (e.g. `e = m c ^ 2`)
-- **Every macro in `config.json`'s `tex.macros`** — iterates over all keys, invokes each as inline `\(...\)` inside a minimal HTML page, and asserts output has exactly `<macros.length>` `<math …></math>` elements (one per macro), each carrying its own source annotation. This is the safety net that keeps custom macros wired end-to-end
+- **Argument-taking custom macros in `config.json` MUST be listed in the `takeArgument` set** (`test/tex2mml.test.js:135`). The config-macro test invokes each as `\name` (no args) unless its name is there; a required-but-unlisted arg → MathJax emits `<merror>` and the "0 errors" assertion fails.
+- **Locale macros are invoked with NO argument** (`test/tex2mml.test.js:94`). Keep them abbreviation-style / arg-free, or their conversion test fails.
 
-## Code Formatting
+Both suites iterate over all macro keys in `config.json`'s and each locale's `tex.macros`, so newly added names are covered automatically — you only need to update the sets above for macros that take arguments. Malformed input (e.g. `\left(`) is expected to produce exactly one `<merror>` per equation, not a crash.
 
-All formatting is enforced and auto-fixed by ESLint (`npm run lint -- --fix`). Rules live in `.eslintrc.json` — do not hand-count tabs, spaces, or blank lines; let the linter fix them before committing. See `npm run lint -- --fix`.
+## Formatting / lint rules
+
+ESLint enforces and auto-fixes formatting (`npm run lint -- --fix`): **tab indentation**, single quotes with `avoidEscape`, braces/parens/spacing around `{}`, no trailing spaces, max 1 blank line, lowercase/camelCase constants (no SCREAMING_CAPS). Don't hand-count whitespace — let the linter fix it before committing. Config: `eslint.config.mjs`. Excludes `.opencode/` and `node_modules/`.
+
+## Architecture / deploy notes (lower priority)
+
+- Entry point is the bundled CommonJS script `tex2mml.cjs`; runtime deps are `@mathjax/src` + `@js-util/config-object-merge`; build via webpack/terser.
+- A key non-obvious detail in `tex2mml.cjs`: mhchem's output-side renderer registration (`rendererExtensions`/`extraLoads`) is stripped so CHTML isn't an active jax — this tool serializes raw MathML and would otherwise crash reading rendered DOM nodes (tex2mml.cjs:40).
+- Containerisation: `Dockerfile` + `docker-compose.yml` run the bundled `.cjs` as a busybox httpd CGI server on port 80 returning `text/mathml`, wired into MediaWiki via the MathJax/External Data extensions.

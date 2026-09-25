@@ -19,11 +19,11 @@ Reads input from **stdin**. A standalone equation is treated as TeX; any input t
 node tex2mml.cjs -v           # Print the MathJax/MathML tool version
 node tex2mml.cjs -h           # Show this help message
 
-# Convert a single TeX equation to embedded MathML (reads from stdin)
-echo 'e = m c ^ 2' | node tex2mml.cjs > output.mml
+# Convert a single TeX equation to embedded MathML (reads from stdin), render with English conventions about function naming:
+echo 'e = m c ^ 2' | node tex2mml.cjs -l en > output.mml
 
-# Render an HTML page containing formulas; each formula becomes <math …></math> and its original source is added as an <annotation>
-node tex2mml.cjs < input.html > output.html
+# Render an HTML page containing formulas; each formula becomes <math …></math> and its original source is added as an <annotation>, render with Russian (default) conventions about function naming:
+node tex2mml.cjs -l ru < input.html > output.html
 
 # Run tests:
 npm test
@@ -31,21 +31,25 @@ npm test
 
 ### Custom macros
 
-`config.json` defines ~139 custom `\newcommand`-style macros. They fall into these rough groups (the full list lives in `config.json`; every macro is covered by an end-to-end test):
+- `config.json` defines 124 custom `\newcommand`-style macros. They fall into these rough groups (the full list lives in `config.json`; every macro is covered by an end-to-end test):
 
-- **Uppercase Greek letters** as literal text, usable outside math mode: `\Alpha`, `\Beta`, `\Chi`, …
-- **Double-struck / blackboard number sets and groups**: `\N`→ℕ, `\Z`→ℤ, `\Q`→ℚ, `\R`→ℝ, `\C`→ℂ (plus `\D`, `\F`, `\H`, `\O`).
-- **Special analytic functions** as operator names: Airy `Ai`/`Bi`, exponential integral `Ei`, sine/cosine integrals `Si`/`Ci`, error function `Erf`/`erfc`/`erfi`, logarithmic integral `Li`.
-- **Russian-style trig / hyperbolic abbreviations** (Cyrillic math convention): `\tg`→tan, `\ctg`→cot; `\sh`/\`\ch\`/\`\th\` → sinh/cosh/tanh; and their inverse forms (`arsh`, `arch`, …).
-- **Jacobi elliptic / auxiliary operators**: `cn`, `dn`, `sn`, plus related operator names.
-- **Arrows & relations**, logical connectives, set membership: `\larr`, `\rarr`, `\and`, `\or`, `\emptyset` (`\empty`), subset/superset forms.
-- **Suits and symbols**: club/spade/heart/diamond card suits (hearts & diamonds in red), euro `€`.
+  - **Uppercase Greek letters** as literal text, usable outside math mode: `\Alpha`, `\Beta`, `\Chi`, …
+  - **Double-struck / blackboard number sets and groups**: `\N`→ℕ, `\Z`→ℤ, `\Q`→ℚ, `\R`→ℝ, `\C`→ℂ (plus `\D`, `\F`, `\H`, `\O`).
+  - **Special analytic functions** as operator names: Airy `Ai`/`Bi`, exponential integral `Ei`, sine/cosine integrals `Si`/`Ci`, error function `Erf`/`erfc`/`erfi`, logarithmic integral `Li`.
+  - **Jacobi elliptic / auxiliary operators**: `cn`, `dn`, `sn`, plus related operator names.
+  - **Arrows & relations**, logical connectives, set membership: `\larr`, `\rarr`, `\and`, `\or`, `\emptyset` (`\empty`), subset/superset forms.
+  - **Suits and symbols**: club/spade/heart/diamond card suits (hearts & diamonds in red), euro `€`.
+
+- `locale/ru.json` (re-)defines 82 custom `\newcommand`-style macros -- trig / hyperbolic abbreviations -- in Russian style: `\tg`→tan, `\ctg`→cot; `\sh` / `\ch` / `\th` → sinh/cosh/tanh; and their inverse forms (`arsh`, `arch`, …).
+
+- `locale/en.json` defines 14 custom `\newcommand`-style macros -- Russian-style trig / hyperbolic abbreviations displayed following English tradition.
+
 
 ### Enabled TeX packages
 
-TeX processing is configured entirely through `config.json` — the enabled packages, custom macros, math delimiters (`$…$`, `\(...\)`, `\[…\]`, `$$ … $$`) and which HTML tags/classes are skipped while scanning stdin. Two families of packages are loaded:
+TeX processing is configured through `config.json` and `locales/(lang).json` — the enabled packages, custom macros, math delimiters (`$…$`, `\(...\)`, `\[…\]`, `$$ … $$`) and which HTML tags/classes are skipped while scanning stdin. Two families of packages are loaded:
 
-**LaTeX / CTAN packages (each is a standalone package):**
+**LaTeX / CTAN packages:**
 
 - **amsmath** — AMS maths facilities; also pulls in `amsbsy` (bold symbols), `amsopn` (operator names) and `amstext`. <https://www.ctan.org/pkg/amsmath>
 - **mathtools** — extensible brackets/arrows, `\coloneqq`, starred matrices, more environments. Built on amsmath; repository at <https://github.com/latex3/mathtools>. <https://www.ctan.org/pkg/mathtools>
@@ -55,13 +59,11 @@ TeX processing is configured entirely through `config.json` — the enabled pack
 - **gensymb** — generic unit symbols usable in text and math (`\degree`, `\ohm`, …). <https://www.ctan.org/pkg/gensymb>
 - **upgreek** — upright Greek letters (`\upalpha`, …); part of the `was` bundle. <https://www.ctan.org/pkg/upgreek>
 - **textcomp** — text Companion-font symbols (copyright, section markers, …). <https://www.ctan.org/pkg/textcomp>
-
-**MathJax-native TeX extensions (ship within MathJax's input handler rather than as standalone packages):**
-
-- **physics** — clean notation for quantum-mechanical bra-ket (`\langle x | y \rangle`), derivatives and the nabla, derived from Philip Norness's *physicsTeX* project. <https://www.mathjax.org/>
-- **verb** — inline verbatim inside math via `\verb`. <https://docs.mathjax.org/en/latest/tex2mathml.html>
-- **tagformat** — customise equation tags (e.g. the body of `\tag{…}`). <https://www.mathjax.org/>
-- **centernot** — centered negations such as `\cancel` and related notations. <https://docs.mathjax.org/en/latest/tex2mathml.html>
+- **physics** — clean notation for quantum-mechanical bra-ket (`\bra \psi`), derivatives and the nabla by Sergio C. de la Barrerat. <https://ctan.org/pkg/physics?lang=en>
+- **mhchem** — chemical formulas (`\ce{ CO2 + C -> 2 CO }`), chemical formulas. <https://github.com/mhchem/MathJax-mhchem>
+- **verb** — inline verbatim inside math via `\verb`. <https://docs.mathjax.org/en/latest/input/tex/extensions/verb.html>
+- **tagformat** — customise equation tags (e.g. the body of `\tag{…}`). <https://docs.mathjax.org/en/latest/input/tex/extensions/tagformat.html>
+- **centernot** — centered negations such as `\cancel` and related notations by Heiko Oberdiek. <https://www.ctan.org/pkg/centernot>
 - **newcommand**, **textmacros**, **require**, **base** — core TeX machinery (custom commands, text macros, runtime package loading via `\require`, and the base math engine) handled by MathJax's input handler. <https://www.mathjax.org/>
 
 ### TeX → MathML example
@@ -119,7 +121,7 @@ This application is based on:
  - the code from [MathJax Demos Node](https://github.com/mathjax/MathJax-demos-node), radically refactored,
  - the conversion script for MathJax 3, previously distributed with [MathJax](https://github.com/alex-mashin/MathJax) extension for MediaWiki.
 
-AI assistant (OpenCode) was used to help coding.
+An AI assistant (OpenCode) was used to help coding.
 
 **Author:** Alexander Mashin
 

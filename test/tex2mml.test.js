@@ -14,7 +14,7 @@ test( '-h flag shows help', () => {
 	expect( output ).toContain( 'stdin' );
 } )
 
-const formulas = [ 'e = m c ^ 2', '\left( x \right)' ];
+const formulas = [ 'e = m c ^ 2', '\\left( x \\right)', '\\ce{ CO2 + C -> 2 CO }', '\\bra \\psi' ];
 const errors = [ '\\left(', '\\sqrt' ];
 const embeddings = [
 	{ open: '\\(', close: '\\)', intro: { ru: 'Внутристрочная формула', en: 'Inline formula' } },
@@ -23,6 +23,10 @@ const embeddings = [
 	{ open: '$$', close: '$$', intro: { ru: 'Выносная формула', en: 'Display formula' } },
 	{ open: '\\begin{equation}', close: '\\end{equation}', intro: { ru: 'Свободное окружение', en: 'Free environment' } }
 ];
+const escapeSomeHtml = ( ( replacements ) => {
+	const regex = new RegExp( '[' + Object.keys( replacements ).join( '' ) + ']', 'g' );
+	return ( str ) => str.replace( regex, ( ch ) => '&' + replacements[ch] + ';' );
+} ) ( { '&': 'amp', '<': 'lt', '>': 'gt', '"': 'quot' } );
 numErrors = ( output ) => ( output.match( /<merror /g ) || [] ).length;
 
 for ( const lang of [ 'ru', 'en' ] ) {
@@ -46,22 +50,24 @@ for ( const lang of [ 'ru', 'en' ] ) {
 	const html = '<html><head><title>TeX to MathML test</title></head><body>' + inner + '</body></html>';
 
 	test( 'Process complete HTML contains one <html> and as many <math> tags as there were TeX formulas (' + counter + ') with TeX annotations, and no errors: ' + lang, () => {
-		const output = run( '', html ).toString();
+		const output = run( `-l ${lang}`, html ).toString();
 		expect( output ).toContain( '<html' );
 		const mathTags = ( output.match( /<math[^>]*>.+?<\/math>/gs ) || [] ).length;
 		expect( mathTags ).toBe( counter );
 		for ( const tex of formulas ) {
-			expect( output ).toContain( `<annotation encoding="application/x-tex">${tex}</annotation>` );
+			const escaped = escapeSomeHtml( tex );
+			expect( output ).toContain( `<annotation encoding="application/x-tex">${escaped}</annotation>` );
 		}
 		expect( numErrors( output ) ).toBe( 0 );
 	} );
 
 	test( 'Process HTML tags contain as many <math> tags as there were TeX formulas (' + counter + ') with TeX annotations, and no errors: ' + lang, () => {
-		const output = run( '', inner ).toString();
+		const output = run( `-l ${lang}`, inner ).toString();
 		const mathTags = ( output.match( /<math[^>]*>.+?<\/math>/gs ) || [] ).length;
 		expect( mathTags ).toBe( counter );
 		for ( const tex of formulas ) {
-			expect( output ).toContain( `<annotation encoding="application/x-tex">${tex}</annotation>` );
+			const escaped = escapeSomeHtml( tex );
+			expect( output ).toContain( `<annotation encoding="application/x-tex">${escaped}</annotation>` );
 		}
 		expect( numErrors( output ) ).toBe( 0 );
 	} );
@@ -80,6 +86,26 @@ for ( const lang of [ 'ru', 'en' ] ) {
 		}
 	} );
 
+	const locale = require( '../locales/' + lang + '.json' );
+	const macros = Object.keys( locale );
+	test( 'Test that all macros from locales/' + lang + '.json (' + macros.length + ') are converted without errors', () => {
+		let html = '<html><head><title>Test</title></head><body><ul>';
+		for ( const macro of macros ) {
+			const invoke = '\\( \\' + macro + ' \\)';
+			html += '\n<li>' + macro + ': <code>' + invoke + '</code> &rarr; ' + invoke + '</li>';
+		}
+		html += '</ul></body></html>';
+		const output = run( '', html ).toString();
+		expect( output ).toContain( '<html' );
+		const mathTags = ( output.match( /<math[^>]*>.+?<\/math>/gs ) || [] ).length;
+		expect( mathTags ).toBe( macros.length );
+		for ( const macro of macros ) {
+			const escaped = escapeSomeHtml( macroTest( macro ) );
+			expect( output ).toContain( `<annotation encoding="application/x-tex"> ${escaped} </annotation>` );
+		}
+		expect( numErrors( output ) ).toBe( 0 );
+	} );
+
 }
 
 test( 'Process TeX contains one <math> tag with TeX annotation, and no error', () => {
@@ -87,7 +113,8 @@ test( 'Process TeX contains one <math> tag with TeX annotation, and no error', (
 		const output = run( '', tex ).toString();
 		const mathTags = ( output.match( /<math/g ) || [] ).length;
 		expect( mathTags ).toBe( 1 );
-		expect( output ).toContain( `<annotation encoding="application/x-tex">${tex}</annotation>` );
+		const escaped = escapeSomeHtml( tex );
+		expect( output ).toContain( `<annotation encoding="application/x-tex">${escaped}</annotation>` );
 		expect( numErrors( output ) ).toBe( 0 );
 	}
 } );
@@ -97,15 +124,16 @@ test( 'Process TeX with errors contains one <math> tag with TeX annotation, and 
 		const output = run( '', tex ).toString();
 		const mathTags = ( output.match( /<math/g ) || [] ).length;
 		expect( mathTags ).toBe( 1 );
-		expect( output ).toContain( `<annotation encoding="application/x-tex">${tex}</annotation>` );
+		const escaped = escapeSomeHtml( tex );
+		expect( output ).toContain( `<annotation encoding="application/x-tex">${escaped}</annotation>` );
 		expect( numErrors( output ) ).toBe( 1 );
 	}
 } );
 
 const config = require( '../config.json' );
 const macros = Object.keys( config.tex.macros );
-const macroTest = ( macro ) => '\\' + macro + ( takeArgument.has( macro ) ? '{ x }' : '' );
 const takeArgument = new Set( [ 'ba', 'bc', 'bp', 'bs', 'ceil', 'floor', 'of' ] );
+const macroTest = ( macro ) => '\\' + macro + ( takeArgument.has( macro ) ? '{ x }' : '' );
 test( 'Test that all macros from config.js (' + macros.length + ') are converted without errors', () => {
 	let html = '<html><head><title>Test</title></head><body><ul>';
 	for ( const macro of macros ) {
@@ -118,7 +146,8 @@ test( 'Test that all macros from config.js (' + macros.length + ') are converted
 	const mathTags = ( output.match( /<math[^>]*>.+?<\/math>/gs ) || [] ).length;
 	expect( mathTags ).toBe( macros.length );
 	for ( const macro of macros ) {
-	 	expect( output ).toContain( '<annotation encoding="application/x-tex"> ' + macroTest( macro ) + ' </annotation>' );
+		const escaped = escapeSomeHtml( macroTest( macro ) );
+		expect( output ).toContain( `<annotation encoding="application/x-tex"> ${escaped} </annotation>` );
 	}
 	expect( numErrors( output ) ).toBe( 0 );
 } );
@@ -153,7 +182,8 @@ test( 'Test that all additional macros from <script> (' + Object.keys( addedMacr
 	const mathTags = ( output.match( /<math[^>]*>.+?<\/math>/gs ) || [] ).length;
 	expect( mathTags ).toBe( Object.keys( addedMacros ).length );
 	for ( const [ macro, _ ] of entries ) {
-	 	expect( output ).toContain( `<annotation encoding="application/x-tex"> \\${macro} </annotation>` );
+		const escaped = escapeSomeHtml( macro );
+	 	expect( output ).toContain( `<annotation encoding="application/x-tex"> \\${escaped} </annotation>` );
 	}
 	expect( numErrors( output ) ).toBe( 0 );
 } );

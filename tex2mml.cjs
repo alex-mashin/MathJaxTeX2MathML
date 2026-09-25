@@ -32,7 +32,6 @@
 
 const path = require( 'path' );
 const MathJax = require( '@mathjax/src/source' );
-const fs = require( 'node:fs' );
 const merge = require( '@js-util/config-object-merge' ).all;
 
 // mhchem registers as a TEX input package via '[tex]/mhchem'; fontExtension() in that component also records output-side data
@@ -86,7 +85,7 @@ const withAnnotation = ( mml, math, adaptor ) => {
 	for ( node of adaptor.childNodes( parsed ) ) {
 		adaptor.append( mrow, node );
 	}
-	parsed.children = [];
+	parsed.children = []; // otherwise, there are still empty text nodes.
 	const semantics = adaptor.node( 'semantics' );
 	adaptor.append( semantics, mrow );
 	adaptor.append( semantics, annotation );
@@ -99,8 +98,8 @@ const tex2mml = ( node, document ) => {
 	try {
 		const mml = MathJax.startup.visitor.visitTree( node, document );
 		return withAnnotation( mml, node, document.adaptor );
-	} catch ( err ) {
-		return '<span class="error">' + ( err.message ?? err ) + '</span>';
+	} catch ( error ) {
+		return '<span class="error">' + ( error.message ?? error ) + '</span>';
 	}
 };
 
@@ -111,7 +110,7 @@ const convertTeX = async ( math, document ) => {
 };
 
 // Used by HTML input:
-const extractConfig = ( html, adaptor ) => {
+const extractConfig = async ( html, adaptor ) => {
 	const scripts = adaptor.getElements( 'script', html );
 	for ( const script of scripts ) {
 		const content = script.textContent || script.innerText;
@@ -161,6 +160,37 @@ const typesetTags = async ( document ) => {
 	return adaptor.innerHTML( adaptor.root( doc ).children[1] );
 };
 
+const typeset = async( input, config ) => {
+	await MathJax.init( config ); // initialise MathJax, so we have an adaptor.
+
+	// HTML mode: correcting MathJax after detecting stdin type — re-init with our converter + auto-typesetting of the parsed document:
+	const type = inputType( input );
+	if ( type !== typeTex ) {
+		config.startup.document = input;
+		const extracted = await extractConfig( config.startup.document, MathJax.startup.adaptor );
+		const merged = merge( [ config, extracted ] );
+		merged.options.renderActions = {
+			typeset: [
+				150,
+				( doc ) => {
+					for ( const math of doc.math ) {
+						renderMathML( math, doc )
+					}
+				}
+			]
+		};
+
+		await MathJax.init( merged );
+		if ( type === typeHtml ) {
+			return await typesetHTML( MathJax.startup.document );
+		} else {
+			return await typesetTags( MathJax.startup.document );
+		}
+	} else {
+		return await convertTeX( input.trim(), MathJax.startup.document );
+	}
+};
+
 ( async () => {
 	for ( const arg of process.argv.slice( 2 ) ) {
 		if ( arg === '-h' || arg === '--help' ) {
@@ -179,36 +209,11 @@ Input: Read from stdin. Auto-detects HTML vs TeX based on content.` );
 		}
 	}
 
-	const input = fs.readFileSync( 0, 'utf8' );
+	const chunks = [];
+	for await ( const chunk of process.stdin ) chunks.push( chunk );
+	const input = Buffer.concat( chunks ).toString( 'utf8' );
 
 	const config = require( './config.json' );
-	await MathJax.init( config ); // initialise MathJax, so we have an adaptor.
 
-	let output;
-	// HTML mode: correcting MathJax after detecting stdin type — re-init with our converter + auto-typesetting of the parsed document:
-	if ( inputType( input ) !== typeTex ) {
-		config.startup.document = String( input );
-		const extracted = extractConfig( config.startup.document, MathJax.startup.adaptor );
-		const merged = merge( [ config, extracted ] );
-
-		config.options.renderActions = {
-			typeset: [
-				150,
-				( doc ) => {
-					for ( const math of doc.math ) {
-						renderMathML( math, doc )
-					}
-				}
-			]
-		};
-		await MathJax.init( config );
-		if ( inputType( input ) === typeHtml ) {
-			output = await typesetHTML( MathJax.startup.document );
-		} else {
-			output = await typesetTags( MathJax.startup.document );
-		}
-	} else {
-		output = await convertTeX( input.trim(), MathJax.startup.document );
-	}
-	console.log( output );
+	console.log( await typeset( input, config ) );
 } )();

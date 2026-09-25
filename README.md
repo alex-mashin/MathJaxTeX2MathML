@@ -77,17 +77,26 @@ echo 'E = m c ^ 2' | node tex2mml.cjs
 Output (formatted for readability):
 
 ```xml
-<math xmlns="http://www.w3.org/1998/Math/MathML" data-latex="E = m c ^ 2">
-  <annotation encoding="application/x-tex">E = m c ^ 2</annotation>
-  ...MathML content...
-</math>
+<math xmlns="http://www.w3.org/1998/Math/MathML" data-latex="E = m c ^ 2" display="block"><semantics><mrow>
+  <mi data-latex="E">E</mi>
+  <mo data-latex="=">=</mo>
+  <mi data-latex="m">m</mi>
+  <msup data-latex="c^2">
+    <mi data-latex="c">c</mi>
+    <mn data-latex="2">2</mn>
+  </msup>
+</mrow><annotation encoding="application/x-tex">E = m c ^ 2</annotation></semantics></math>
 ```
 
 The `<annotation encoding="application/x-tex">` tag carries the original TeX source, so downstream consumers can round-trip back to LaTeX.
 
 ### HTML mode example
 
-Given `input.html`:
+```bash
+node tex2mml.cjs < input.html > output.html
+```
+
+given `input.html`:
 
 ```html
 <html><head><title>Demo</title></head><body>
@@ -95,11 +104,22 @@ Given `input.html`:
 </body></html>
 ```
 
-Running it produces a full `<html>…</html>` document in which every formula has been replaced by its MathML rendering:
-
-```bash
-node tex2mml.cjs < input.html > output.html
+ produces:
+ 
+```html
+<html><head><title>Demo</title></head><body>
+<p>The energy is <math xmlns="http://www.w3.org/1998/Math/MathML" data-latex="E = m c ^ 2"><semantics><mrow>
+  <mi data-latex="E">E</mi>
+  <mo data-latex="=">=</mo>
+  <mi data-latex="m">m</mi>
+  <msup data-latex="c^2">
+    <mi data-latex="c">c</mi>
+    <mn data-latex="2">2</mn>
+  </msup>
+</mrow><annotation encoding="application/x-tex">E = m c ^ 2</annotation></semantics></math>.</p>
+</body></html>
 ```
+
 
 ## Integration
 

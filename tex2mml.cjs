@@ -194,10 +194,8 @@ const typeset = async( input, config ) => {
 ( async () => {
 	let locale = 'ru';
 	const args = process.argv.slice( 2 );
-	console.log( args );
 	for ( let pos = 0; pos < args.length; pos++ ) {
 		const arg = args[pos];
-		console.log( `${pos} --> ${arg}` );
 		if ( arg === '-h' || arg === '--help' ) {
 			console.log( `tex2mml.cjs [options]
 Convert TeX expressions to MathML via stdin.

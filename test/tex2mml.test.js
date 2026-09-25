@@ -14,7 +14,8 @@ test( '-h flag shows help', () => {
 	expect( output ).toContain( 'stdin' );
 } )
 
-const formulas = [ 'e = m c ^ 2' ];
+const formulas = [ 'e = m c ^ 2', '\left( x \right)' ];
+const errors = [ '\\left(', '\\sqrt' ];
 const embeddings = [
 	{ open: '\\(', close: '\\)', intro: { ru: 'Внутристрочная формула', en: 'Inline formula' } },
 	{ open: '$', close: '$', intro: { ru: 'Внутристрочная формула', en: 'Inline formula' } },
@@ -22,6 +23,7 @@ const embeddings = [
 	{ open: '$$', close: '$$', intro: { ru: 'Выносная формула', en: 'Display formula' } },
 	{ open: '\\begin{equation}', close: '\\end{equation}', intro: { ru: 'Свободное окружение', en: 'Free environment' } }
 ];
+numErrors = ( output ) => ( output.match( /<merror /g ) || [] ).length;
 
 for ( const lang of [ 'ru', 'en' ] ) {
 	let counter = 0;
@@ -43,7 +45,7 @@ for ( const lang of [ 'ru', 'en' ] ) {
 
 	const html = '<html><head><title>TeX to MathML test</title></head><body>' + inner + '</body></html>';
 
-	test( 'Process complete HTML contains one <html> and as many <math> tags as there were TeX formulas (' + counter + ') with TeX annotations: ' + lang, () => {
+	test( 'Process complete HTML contains one <html> and as many <math> tags as there were TeX formulas (' + counter + ') with TeX annotations, and no errors: ' + lang, () => {
 		const output = run( '', html ).toString();
 		expect( output ).toContain( '<html' );
 		const mathTags = ( output.match( /<math[^>]*>.+?<\/math>/gs ) || [] ).length;
@@ -51,42 +53,55 @@ for ( const lang of [ 'ru', 'en' ] ) {
 		for ( const tex of formulas ) {
 			expect( output ).toContain( `<annotation encoding="application/x-tex">${tex}</annotation>` );
 		}
+		expect( numErrors( output ) ).toBe( 0 );
 	} );
 
-	test( 'Process HTML tags contain as many <math> tags as there were TeX formulas (' + counter + ') with TeX annotations: ' + lang, () => {
+	test( 'Process HTML tags contain as many <math> tags as there were TeX formulas (' + counter + ') with TeX annotations, and no errors: ' + lang, () => {
 		const output = run( '', inner ).toString();
 		const mathTags = ( output.match( /<math[^>]*>.+?<\/math>/gs ) || [] ).length;
 		expect( mathTags ).toBe( counter );
 		for ( const tex of formulas ) {
 			expect( output ).toContain( `<annotation encoding="application/x-tex">${tex}</annotation>` );
 		}
+		expect( numErrors( output ) ).toBe( 0 );
 	} );
 
-	test( 'Process complete HTML from stdin preserves doctype: ' + lang, () => {
+	test( 'Process complete HTML preserves doctype: ' + lang, () => {
 		let doctype = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
 		"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">`
 		const output = run( '', doctype + '\n' + html );
 		expect( output.toString() ).toContain( doctype );
 	} );
 
-	test( 'Process complete HTML from stdin preserves Unicode as-is: ' + lang, () => {
+	test( 'Process complete HTML preserves Unicode as-is: ' + lang, () => {
 		const output = run( '', html );
 		for ( const word of words ) {
 			expect( output.toString() ).toContain( word );
 		}
 	} );
+
 }
 
-test( 'Process TeX from stdin contains one <math> tag with TeX annotation', () => {
+test( 'Process TeX contains one <math> tag with TeX annotation, and no error', () => {
 	for ( const tex of formulas ) {
 		const output = run( '', tex ).toString();
 		const mathTags = ( output.match( /<math/g ) || [] ).length;
 		expect( mathTags ).toBe( 1 );
 		expect( output ).toContain( `<annotation encoding="application/x-tex">${tex}</annotation>` );
+		expect( numErrors( output ) ).toBe( 0 );
 	}
 } );
 
-numErrors = ( output ) => ( output.match( /<merror /g ) || [] ).length;
+test( 'Process TeX with errors contains one <math> tag with TeX annotation, and one error', () => {
+	for ( const tex of errors ) {
+		const output = run( '', tex ).toString();
+		const mathTags = ( output.match( /<math/g ) || [] ).length;
+		expect( mathTags ).toBe( 1 );
+		expect( output ).toContain( `<annotation encoding="application/x-tex">${tex}</annotation>` );
+		expect( numErrors( output ) ).toBe( 1 );
+	}
+} );
+
 const config = require( '../config.json' );
 const macros = Object.keys( config.tex.macros );
 const macroTest = ( macro ) => '\\' + macro + ( takeArgument.has( macro ) ? '{ x }' : '' );
@@ -140,4 +155,5 @@ test( 'Test that all additional macros from <script> (' + Object.keys( addedMacr
 	for ( const [ macro, _ ] of entries ) {
 	 	expect( output ).toContain( `<annotation encoding="application/x-tex"> \\${macro} </annotation>` );
 	}
+	expect( numErrors( output ) ).toBe( 0 );
 } );

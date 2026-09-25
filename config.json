@@ -138,26 +138,11 @@
 			"arcth": "\\operatorname{ arcotanh }",
 			"arsh": "\\operatorname{ arsinh }",
 			"arth": "\\operatorname{ artanh }",
-			"ba": [
-				"\\left< #1 \\right>",
-				1
-			],
-			"bc": [
-				"\\left\\lbrace #1 \\right\\rbrace",
-				1
-			],
-			"bp": [
-				"\\left( #1 \\right)",
-				1
-			],
-			"bs": [
-				"\\left[ #1 \\right]",
-				1
-			],
-			"ceil": [
-				"\\left\\lceil #1 \\right\\rceil",
-				1
-			],
+			"ba": [ "\\left< #1 \\right>", 1 ],
+			"bc": [ "\\left\\lbrace #1 \\right\\rbrace", 1 ],
+			"bp": [ "\\left( #1 \\right)", 1 ],
+			"bs": [ "\\left[ #1 \\right]", 1 ],
+			"ceil": [ "\\left\\lceil #1 \\right\\rceil", 1 ],
 			"ch": "\\operatorname{ cosh }",
 			"clubs": "\\clubsuit",
 			"cd": "\\operatorname{ cd }",
@@ -179,10 +164,7 @@
 			"erfi": "\\operatorname{ erfi }",
 			"euro": "\\mbox{\\unicode{x20AC}}",
 			"fint": "{\\huge\\unicode{x2A0F}}",
-			"floor": [
-				"\\left\\lfloor #1 \\right\\rfloor",
-				1
-			],
+			"floor": [ "\\left\\lfloor #1 \\right\\rfloor", 1 ],
 			"gd": "\\operatorname{ gd }",
 			"hearts": "{ \\color{ red } \\heartsuit }",
 			"helm": "\\operatorname{ helm }",
@@ -196,7 +178,6 @@
 			"koppa": "\\mbox{\\unicode{x03DF}}",
 			"lam": "\\lambda",
 			"larr": "\\leftarrow",
-			"left": "\\leftarrow",
 			"li": "\\operatorname{li}",
 			"lowint": "\\operatorname*{ \\huge\\unicode{x2A1C} }",
 			"nc": "\\operatorname{ nc }",
@@ -206,10 +187,7 @@
 			"oiint": "\\operatorname*{ \\huge\\unicode{x222F} }",
 			"ointclockwise": "\\operatorname*{ \\huge\\unicode{x2232} }",
 			"ointctrclockwise": "\\operatorname*{ \\huge\\unicode{x2233} }",
-			"of": [
-				"\\left( #1 \\right)",
-				1
-			],
+			"of": [ "\\left( #1 \\right)", 1 ],
 			"or": "\\lor",
 			"ord": "\\operatorname{ ord }",
 			"rarr": "\\rightarrow",

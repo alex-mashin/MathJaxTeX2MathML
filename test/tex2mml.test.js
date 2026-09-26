@@ -4,6 +4,33 @@ function run( command, input = null ) {
 	return execSync( `node ${cli} ${command}`, { encoding: 'utf8', input } );
 }
 
+const { writeFileSync, rmSync } = require( 'node:fs' );
+const path = require( 'path' );
+const { tmpdir } = require( 'os' );
+const [ writeTemp, removeTemp ] = ( () => {
+	const files = [];
+	return [
+		( contents, extension ) => {
+			const filepath = path.join( tmpdir(), `tex2mml-${process.pid}-${Date.now()}.${extension}` );
+			writeFileSync( filepath, contents, 'utf8' );
+			files.push( filepath );
+			return filepath;
+		},
+		() => {
+			for ( const filepath of files ) {
+				try {
+					rmSync( filepath, { force: true } );
+				} catch ( e ) { /* ignore cleanup errors */ }
+			}
+		}
+	];
+} )();
+function removeFile( filepath ) {
+	try {
+		rmSync( filepath, { force: true } );
+	} catch ( e ) { /* ignore cleanup errors */ }
+}
+
 test( '-v flag shows version', () => {
 	const output = run( '-v' );
 	expect( output.trim() ).toContain( '4.1' );
@@ -29,6 +56,8 @@ const escapeSomeHtml = ( ( replacements ) => {
 } ) ( { '&': 'amp', '<': 'lt', '>': 'gt', '"': 'quot' } );
 numErrors = ( output ) => ( output.match( /<merror /g ) || [] ).length;
 
+const cleans = [];
+
 for ( const lang of [ 'ru', 'en' ] ) {
 	let counter = 0;
 	let words = [];
@@ -46,44 +75,64 @@ for ( const lang of [ 'ru', 'en' ] ) {
 		}
 		return inner + '\n</ul>';
 	} )( lang );
+	const innerTmp = writeTemp( inner, `${lang}.tags` );
 
 	const html = '<html><head><title>TeX to MathML test</title></head><body>' + inner + '</body></html>';
+	const htmlTmp = writeTemp( html, `${lang}.html` );
 
-	test( 'Process complete HTML contains one <html> and as many <math> tags as there were TeX formulas (' + counter + ') with TeX annotations, and no errors: ' + lang, () => {
-		const output = run( `-l ${lang}`, html ).toString();
-		expect( output ).toContain( '<html' );
-		const mathTags = ( output.match( /<math[^>]*>.+?<\/math>/gs ) || [] ).length;
-		expect( mathTags ).toBe( counter );
-		for ( const tex of formulas ) {
-			const escaped = escapeSomeHtml( tex );
-			expect( output ).toContain( `<annotation encoding="application/x-tex">${escaped}</annotation>` );
-		}
-		expect( numErrors( output ) ).toBe( 0 );
-	} );
+	const htmlInvocations = {
+		stdin: [ `-l ${lang}`, html ],
+		path: [ `-l ${lang} -f '${htmlTmp}'`, null ]
+	};
+	for ( const [ mode, invocation ] of Object.entries( htmlInvocations ) )  {
+		test( `Processed complete HTML (${mode} mode) contains one <html>
+			and as many <math> tags as there were TeX formulas (${counter}) with TeX annotations;
+			and no errors: ${lang}`,
+		() => {
+			const output = run( ...invocation ).toString();
+			expect( output ).toContain( '<html' );
+			const mathTags = ( output.match( /<math[^>]*>.+?<\/math>/gs ) || [] ).length;
+			expect( mathTags ).toBe( counter );
+			for ( const tex of formulas ) {
+				const escaped = escapeSomeHtml( tex );
+				expect( output ).toContain( `<annotation encoding="application/x-tex">${escaped}</annotation>` );
+			}
+			expect( numErrors( output ) ).toBe( 0 );
+		} );
 
-	test( 'Process HTML tags contain as many <math> tags as there were TeX formulas (' + counter + ') with TeX annotations, and no errors: ' + lang, () => {
-		const output = run( `-l ${lang}`, inner ).toString();
-		const mathTags = ( output.match( /<math[^>]*>.+?<\/math>/gs ) || [] ).length;
-		expect( mathTags ).toBe( counter );
-		for ( const tex of formulas ) {
-			const escaped = escapeSomeHtml( tex );
-			expect( output ).toContain( `<annotation encoding="application/x-tex">${escaped}</annotation>` );
-		}
-		expect( numErrors( output ) ).toBe( 0 );
-	} );
+		test( `Processed complete HTML (${mode} mode) preserves Unicode as-is: ${lang}`, () => {
+			const output = run( ...invocation );
+			for ( const word of words ) {
+				expect( output.toString() ).toContain( word );
+			}
+		} );
+	}
 
-	test( 'Process complete HTML preserves doctype: ' + lang, () => {
+	const tagsInvocations = {
+		stdin: [ `-l ${lang}`, inner ],
+		path: [ `-l ${lang} -f '${innerTmp}'`, null ]
+	};
+	for ( const [ mode, invocation ] of Object.entries( tagsInvocations ) )  {
+		test( `Processed HTML tags (${mode}) contain
+			as many <math> tags as there were TeX formulas (${counter}) with TeX annotations,
+			and no errors: ${lang}`,
+		() => {
+			const output = run( ...invocation ).toString();
+			const mathTags = ( output.match( /<math[^>]*>.+?<\/math>/gs ) || [] ).length;
+			expect( mathTags ).toBe( counter );
+			for ( const tex of formulas ) {
+				const escaped = escapeSomeHtml( tex );
+				expect( output ).toContain( `<annotation encoding="application/x-tex">${escaped}</annotation>` );
+			}
+			expect( numErrors( output ) ).toBe( 0 );
+		} );
+	}
+
+	test( `Processed complete HTML (stdin mode) preserves doctype: ${lang}`, () => {
 		let doctype = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
 		"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">`
-		const output = run( '', doctype + '\n' + html );
+		const output = run( '', doctype + html );
 		expect( output.toString() ).toContain( doctype );
-	} );
-
-	test( 'Process complete HTML preserves Unicode as-is: ' + lang, () => {
-		const output = run( '', html );
-		for ( const word of words ) {
-			expect( output.toString() ).toContain( word );
-		}
 	} );
 
 	const locale = require( '../locales/' + lang + '.json' );
@@ -106,6 +155,7 @@ for ( const lang of [ 'ru', 'en' ] ) {
 		expect( numErrors( output ) ).toBe( 0 );
 	} );
 
+	cleans.push( innerTmp, htmlTmp );
 }
 
 test( 'Process TeX contains one <math> tag with TeX annotation, and no error', () => {
@@ -183,7 +233,7 @@ test( 'Test that all additional macros from <script> (' + Object.keys( addedMacr
 	expect( mathTags ).toBe( Object.keys( addedMacros ).length );
 	for ( const [ macro, _ ] of entries ) {
 		const escaped = escapeSomeHtml( macro );
-	 	expect( output ).toContain( `<annotation encoding="application/x-tex"> \\${escaped} </annotation>` );
+		expect( output ).toContain( `<annotation encoding="application/x-tex"> \\${escaped} </annotation>` );
 	}
 	expect( numErrors( output ) ).toBe( 0 );
 } );
@@ -215,3 +265,5 @@ test( 'HTML with bussproofs contains one <math> tag with a TeX annotation, and n
 	expect( output ).toContain( `<annotation encoding="application/x-tex">${escaped}</annotation>` );
 	expect( numErrors( output ) ).toBe( 0 );
 } );
+
+afterAll( removeTemp );

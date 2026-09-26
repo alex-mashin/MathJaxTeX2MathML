@@ -14,6 +14,7 @@ Order matters: **lint -> test**. Tests run via Jest; there's no typecheck or sep
 - Test: `npm test`  ·  Lint: `npm run lint`
 - Show version/help before MathJax init: `node tex2mml.cjs -v` / `-h`
 - Convert TeX/MathML from stdin, locale via `-l`: `node tex2mml.cjs -l ru < input.tex`, `< input.html`
+- Read the document from a file instead of stdin (for clients that cap how much they can pipe on stdin — e.g. MediaWiki), via `-f <path>`; combine with `-l`. Default input is still **stdin** when no `-f` is given.
 
 ## What to edit — config files, not the script
 
@@ -26,11 +27,13 @@ Locale macros are redefinitions of names already in `config.json`, so macro coun
 
 ## Input modes (auto-detected by regex in `inputType`, tex2mml.cjs:73)
 
+The document is read from **stdin** by default, or from a file with `-f <path>` when the client caps how much it can pipe on stdin (e.g. MediaWiki). The content type is then auto-detected and handled as one of these modes:
+
 - **TeX** — a standalone equation → one `<math …></math>` with the source embedded in `<annotation encoding="application/x-tex">`.
 - **HTML tags** (`<tag>…</tag>` blocks) → same tag structure, each formula as `<math>`.
 - **HTML** (optional `<!doctype>` + `<html>…</html>`) → full page with every formula replaced by `<math>`, doctype/non-latin preserved verbatim.
 
-In HTML/tags modes a leading `<script>window.MathJax = {…}</script>` block on stdin is parsed and its object merged over `config.json` (`@js-util/config-object-merge`); `options.menuOptions` is stripped from any such override before merging (tex2mml.cjs:133).
+In HTML/tags modes a leading `<script>window.MathJax = {…}</script>` block in the document — whether read from stdin or via `-f <path>` — is parsed and its object merged over `config.json` (`@js-util/config-object-merge`); `options.menuOptions` is stripped from any such override before merging (tex2mml.cjs:133).
 
 ## Test suite — safety nets you must not break
 

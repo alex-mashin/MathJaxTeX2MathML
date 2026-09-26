@@ -30,6 +30,7 @@
  *  SOFTWARE.
  */
 
+const { readFile } = require( 'node:fs/promises' );
 const path = require( 'path' );
 const MathJax = require( '@mathjax/src/source' );
 const merge = require( '@js-util/config-object-merge' ).all;
@@ -194,6 +195,7 @@ const typeset = async( input, config ) => {
 
 ( async () => {
 	let locale = 'ru';
+	let file = '-';
 	const args = process.argv.slice( 2 );
 	for ( let pos = 0; pos < args.length; pos++ ) {
 		const arg = args[pos];
@@ -205,6 +207,7 @@ Options:
 -h, --help    Show this help message
 -v, --version Show version
 -l, --lang    Set locale (optional, default '${locale}')
+-f, --file    File to read, stdin by default
 
 Input: Read from stdin. Auto-detects HTML vs TeX based on content.` );
 			process.exit( 0 );
@@ -213,20 +216,33 @@ Input: Read from stdin. Auto-detects HTML vs TeX based on content.` );
 			process.exit( 0 );
 		} else if ( arg === '-l' || arg === '--lang' ) {
 			locale = args[++pos] ?? locale;
+		} else if ( arg === '-f' || arg === '--file' ) {
+			file = args[++pos] ?? file;
 		}
 	}
 
-	const chunks = [];
-	for await ( const chunk of process.stdin ) chunks.push( chunk );
-	const input = Buffer.concat( chunks ).toString( 'utf8' );
+	const input = await ( async ( file ) => {
+		if ( file === '-' ) {
+			const chunks = [];
+			for await ( const chunk of process.stdin ) chunks.push( chunk );
+			return Buffer.concat( chunks ).toString( 'utf8' );
+		} else {
+			try {
+				return await readFile( file, 'utf8' );
+			} catch ( err ) {
+				console.error( err );
+			}
+		}
+	} )( file );
 
 	const config = require( './config.json' );
-	let locale_macros;
-	try {
-		locale_macros = require( './locales/' + locale + '.json' );
-	} catch {
-	 	locale_macros = require( './locales/ru.json' );
-	}
+	const locale_macros = ( ( locale ) => {
+		try {
+			return require( './locales/' + locale + '.json' );
+		} catch {
+			return require( './locales/ru.json' );
+		}
+	} )( locale );
 	config.tex.macros = merge( [ config.tex.macros, locale_macros ] );
 
 	console.log( await typeset( input, config ) );

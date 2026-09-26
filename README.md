@@ -1,6 +1,6 @@
 # MathJax TeX to MathML
 
-A command-line tool for converting TeX expressions to MathML using MathJax v4.
+A command-line tool for converting TeX expressions to MathML using MathJax 4.1.
 
 ## Installation
 
@@ -12,7 +12,7 @@ npm i
 
 ## Usage
 
-Reads input from **stdin**. A standalone equation is treated as TeX; any input that resembles HTML or XML markup (even incomplete) is processed as an HTML page:
+Reads input from **stdin**, or from a file with `-f <path>` when the client cannot safely pipe all of it on stdin. A standalone equation is treated as TeX; any input that resembles HTML or XML markup (even incomplete) is processed as an HTML page:
 
 ```bash
 # Show version / help
@@ -22,8 +22,12 @@ node tex2mml.cjs -h           # Show this help message
 # Convert a single TeX equation to embedded MathML (reads from stdin), render with English conventions about function naming:
 echo 'e = m c ^ 2' | node tex2mml.cjs -l en > output.mml
 
-# Render an HTML page containing formulas; each formula becomes <math …></math> and its original source is added as an <annotation>, render with Russian (default) conventions about function naming:
+# Render an HTML page containing formulas; each formula becomes <math …></math> and its original source is added as an <annotation>,
+# render with Russian (default) conventions about function naming:
 node tex2mml.cjs -l ru < input.html > output.html
+
+# Read the document from a file instead of stdin — useful when clients such as MediaWiki cap how much data they can pipe on another program's stdin:
+node tex2mml.cjs -l ru -f input.html > output.html
 
 # Run tests:
 npm test
@@ -33,7 +37,7 @@ npm test
 
 - `config.json` defines 124 custom `\newcommand`-style macros. They fall into these rough groups (the full list lives in `config.json`; every macro is covered by an end-to-end test):
 
-  - **Uppercase Greek letters** as literal text, usable outside math mode: `\Alpha`, `\Beta`, `\Chi`, …
+  - **Uppercase Greek letters** that look like Latin capitals: `\Alpha`, `\Beta`, `\Chi`, …
   - **Double-struck / blackboard number sets and groups**: `\N`→ℕ, `\Z`→ℤ, `\Q`→ℚ, `\R`→ℝ, `\C`→ℂ (plus `\D`, `\F`, `\H`, `\O`).
   - **Special analytic functions** as operator names: Airy `Ai`/`Bi`, exponential integral `Ei`, sine/cosine integrals `Si`/`Ci`, error function `Erf`/`erfc`/`erfi`, logarithmic integral `Li`.
   - **Jacobi elliptic / auxiliary operators**: `cn`, `dn`, `sn`, plus related operator names.
@@ -47,9 +51,7 @@ npm test
 
 ### Enabled TeX packages
 
-TeX processing is configured through `config.json` and `locales/(lang).json` — the enabled packages, custom macros, math delimiters (`$…$`, `\(...\)`, `\[…\]`, `$$ … $$`) and which HTML tags/classes are skipped while scanning stdin. Two families of packages are loaded:
-
-**LaTeX / CTAN packages:**
+TeX processing is configured through `config.json` and `locales/(lang).json` — the enabled packages, custom macros, math delimiters (`$…$`, `\(...\)`, `\[…\]`, `$$ … $$`) and which HTML tags/classes are skipped while scanning stdin.
 
 - **amsmath** — AMS maths facilities; also pulls in `amsbsy` (bold symbols), `amsopn` (operator names) and `amstext`. <https://www.ctan.org/pkg/amsmath>
 - **mathtools** — extensible brackets/arrows, `\coloneqq`, starred matrices, more environments. Built on amsmath; repository at <https://github.com/latex3/mathtools>. <https://www.ctan.org/pkg/mathtools>
@@ -127,6 +129,16 @@ given `input.html`:
 This script works server-side, or Dockerised (use `Dockerfile` and `docker-compose.yml` in this case).
 
 It was developed to use with MediaWiki (External Data and MathJax extensions), but presumably, can work with other frameworks.
+
+### Reading from a file instead of stdin (`-f`)
+
+Some clients — notably MediaWiki feeding data into the external converter — cap how much they will put on another program's **stdin**. When that is a concern, pass `-f <path>` to read the document from a temporary file rather than stdin:
+
+```bash
+node tex2mml.cjs -l ru -f /tmp/input.html > output.html
+```
+
+The client owns creation and cleanup of such temp files; `tex2mml.cjs` only reads them. By default (no `-f`) input still comes from **stdin**.
 
 ## Implementation details
 

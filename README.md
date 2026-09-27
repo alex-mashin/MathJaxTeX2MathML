@@ -57,6 +57,7 @@ TeX processing is configured through `config.json` and `locales/(lang).json` —
 - **mathtools** — extensible brackets/arrows, `\coloneqq`, starred matrices, more environments. Built on amsmath; repository at <https://github.com/latex3/mathtools>. <https://www.ctan.org/pkg/mathtools>
 - **empheq** — box/highlight equations and side material (`\begin{empheq}`); part of the mathtools bundle, same repo. <https://www.ctan.org/pkg/empheq>
 - **amscd** — AMS commutative diagrams (ships with amsmath). <https://www.ctan.org/pkg/amscd>
+- **cases** — provides environments `numcases` and `subnumcases` for formulas with separately enumerated cases; by Donald Arseneau. <https://www.ctan.org/pkg/cases>
 - **colortbl** — colour rows/columns/cells in tables; by David Carlisle. <https://www.ctan.org/pkg/colortbl>
 - **gensymb** — generic unit symbols usable in text and math (`\degree`, `\ohm`, …). <https://www.ctan.org/pkg/gensymb>
 - **upgreek** — upright Greek letters (`\upalpha`, …); part of the `was` bundle. <https://www.ctan.org/pkg/upgreek>
